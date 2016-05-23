@@ -84,6 +84,14 @@ func TestTranspileUnit(t *testing.T) {
 			"func a() {\n  a := 0\n}",
 			"void a() {\n  int a = 0;\n}\n",
 		},
+		{
+			"var a []int",
+			"int * a;",
+		},
+		{
+			"var a = []int{1, 2}",
+			"int a[] = {1, 2};",
+		},
 
 		// These are incorrect:
 		{

@@ -214,24 +214,33 @@ func guessType(vs *ast.ValueSpec) (token.Token, string, error) {
 		// It is an default value, e.g. "var a int". It can't be const.
 		// token.Lookup() is not very useful as it expects "STRING" instead of
 		// "string".
-		switch n := vs.Type.(*ast.Ident).Name; n {
-		case "int":
-			return token.INT, "0", nil
-		case "string":
-			return token.STRING, "\"\"", nil
-		default:
-			return token.ILLEGAL, "", fmt.Errorf("unsupported type: %s", n)
+		switch t := vs.Type.(type) {
+		case *ast.Ident:
+			switch n := t.Name; n {
+			case "int":
+				return token.INT, "0", nil
+			case "string":
+				return token.STRING, "\"\"", nil
+			default:
+				return token.ILLEGAL, "", fmt.Errorf("unsupported type: %s", n)
+			}
+		case *ast.ArrayType:
+			// Recurse in t.Elt.
+			panic(t)
 		}
 	}
 	// Normal declaration of type "var a = 1" or "const a = 1".
 	if len(vs.Values) > 1 {
 		return token.ILLEGAL, "", fmt.Errorf("unsupported # of values: %v", vs.Names)
 	}
-	l, ok := vs.Values[0].(*ast.BasicLit)
-	if !ok {
+	switch s := vs.Values[00].(type) {
+	case *ast.BasicLit:
+		return s.Kind, s.Value, nil
+	case *ast.CompositeLit:
+		return token.DEFINE, "[]" + typeFromExpr(s.Type), nil
+	default:
 		return token.ILLEGAL, "", fmt.Errorf("unsupported value: %#v", vs.Values[0])
 	}
-	return l.Kind, l.Value, nil
 }
 
 func isValueConst(vs *ast.ValueSpec) bool {
@@ -533,6 +542,8 @@ func handleExpr(out *output, e ast.Expr) error {
 
 func typeFromExpr(e ast.Expr) string {
 	switch expr := e.(type) {
+	case *ast.ArrayType:
+		return typeFromExpr(expr.Elt)
 	case *ast.BasicLit:
 		// a constant
 		return tokenStr(expr.Kind, false)
@@ -541,7 +552,8 @@ func typeFromExpr(e ast.Expr) string {
 	case *ast.Ident:
 		// identifier
 		return expr.Name
-	//case *ast.SelectorExpr:
+	case *ast.SelectorExpr:
+		return typeFromExpr(expr.X) + "." + typeFromExpr(expr.Sel)
 	//case *ast.StarExpr:
 	//case *ast.UnaryExpr:
 	default:
