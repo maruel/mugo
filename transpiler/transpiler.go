@@ -129,22 +129,8 @@ type output struct {
 // Writef makes sure that all comments up to the point where the Node is
 // declared are flushed.
 func (o *output) Writef(n ast.Node, format string, a ...interface{}) {
-	//log.Printf("  %s %v", reflect.TypeOf(n), n)
 	// TODO(maruel): Print characters between symbols and statement.
 	// TODO(maruel): This should be done with ast.CommentMap.
-	/*
-		// Flush anything before last node and next node.
-		if o.lastNode != n {
-			if o.lastNode != nil {
-				// Print everything before the node.
-				o.out.Write(o.content[o.lastNode.End():n.Pos()])
-			} else {
-				// Print everything before the node.
-				o.out.Write(o.content[:n.Pos()])
-			}
-		}
-		o.lastNode = n
-	*/
 	if o.err == nil {
 		for len(o.c) != 0 && n.Pos() > o.c[0].Pos() {
 			for _, c := range o.c[0].List {
